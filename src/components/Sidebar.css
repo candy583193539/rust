@@ -98,14 +98,14 @@
   position: relative;
 }
 
-.table-item::before {
-  content: '';
-  width: 3px;
-  height: 3px;
-  background: var(--text-muted);
-  border-radius: 50%;
+.table-item-icon {
   flex-shrink: 0;
-  transition: all var(--transition);
+  opacity: 0.5;
+  transition: opacity var(--transition);
+}
+
+.table-item::before {
+  display: none;
 }
 
 .table-item:hover {

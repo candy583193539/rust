@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { IconHost, IconPort, IconUser, IconLock, IconDatabase } from "./Icons";
 import "./ConnectForm.css";
 
 interface Props {
@@ -37,43 +38,60 @@ function ConnectForm({ onConnect }: Props) {
     <div className="connect-wrapper">
       <form className="connect-form" onSubmit={handleSubmit}>
         <div className="connect-form-logo">
-          <div className="connect-form-logo-icon">🗄️</div>
+          <div className="connect-form-logo-icon">
+            <IconDatabase size={22} />
+          </div>
         </div>
         <h2>连接 SQL Server</h2>
         <p className="connect-form-subtitle">输入数据库连接信息</p>
         <label>
           主机
-          <input value={host} onChange={(e) => setHost(e.target.value)} placeholder="192.168.x.x" />
+          <div className="input-icon-wrap">
+            <IconHost size={14} className="input-icon" />
+            <input value={host} onChange={(e) => setHost(e.target.value)} placeholder="192.168.x.x" />
+          </div>
         </label>
         <label>
           端口
-          <input
-            type="number"
-            value={port}
-            onChange={(e) => setPort(Number(e.target.value))}
-            placeholder="1433"
-          />
+          <div className="input-icon-wrap">
+            <IconPort size={14} className="input-icon" />
+            <input
+              type="number"
+              value={port}
+              onChange={(e) => setPort(Number(e.target.value))}
+              placeholder="1433"
+            />
+          </div>
         </label>
         <label>
           用户名
-          <input value={user} onChange={(e) => setUser(e.target.value)} placeholder="username" />
+          <div className="input-icon-wrap">
+            <IconUser size={14} className="input-icon" />
+            <input value={user} onChange={(e) => setUser(e.target.value)} placeholder="username" />
+          </div>
         </label>
         <label>
           密码
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-          />
+          <div className="input-icon-wrap">
+            <IconLock size={14} className="input-icon" />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+            />
+          </div>
         </label>
         <label>
           数据库
-          <input
-            value={database}
-            onChange={(e) => setDatabase(e.target.value)}
-            placeholder="database name"
-          />
+          <div className="input-icon-wrap">
+            <IconDatabase size={14} className="input-icon" />
+            <input
+              value={database}
+              onChange={(e) => setDatabase(e.target.value)}
+              placeholder="database name"
+            />
+          </div>
         </label>
         {error && <div className="error">{error}</div>}
         <button type="submit" disabled={loading}>

@@ -2,6 +2,10 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { QueryResult } from "../types";
 import { getTableConfig, type ColumnConfig } from "../tableConfig";
+import {
+  IconFilter, IconSearch, IconChevronLeft, IconChevronRight,
+  IconRows, IconSave, IconX, IconRefresh, IconInbox
+} from "./Icons";
 import "./DataTable.css";
 
 interface Props {
@@ -10,6 +14,20 @@ interface Props {
 
 const PAGE_SIZE = 50;
 
+// Simple fuzzy match: all chars of pattern appear in order in str
+function fuzzyMatch(str: string, pattern: string): boolean {
+  if (!pattern) return true;
+  const s = str.toLowerCase();
+  const p = pattern.toLowerCase();
+  let si = 0;
+  for (let pi = 0; pi < p.length; pi++) {
+    const idx = s.indexOf(p[pi], si);
+    if (idx < 0) return false;
+    si = idx + 1;
+  }
+  return true;
+}
+
 function DataTable({ tableName }: Props) {
   const [data, setData] = useState<QueryResult | null>(null);
   const [page, setPage] = useState(1);
@@ -17,7 +35,7 @@ function DataTable({ tableName }: Props) {
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
 
-  // draft: what user is typing; applied: what's actually filtering
+  const [filterOpen, setFilterOpen] = useState(false);
   const [draftFilters, setDraftFilters] = useState<Record<string, string>>({});
   const [appliedFilters, setAppliedFilters] = useState<Record<string, string>>({});
 
@@ -66,6 +84,7 @@ function DataTable({ tableName }: Props) {
     setPage(1);
     setDraftFilters({});
     setAppliedFilters({});
+    setFilterOpen(false);
     setDetailRow(null);
     loadData(1);
   }, [tableName, loadData]);
@@ -84,8 +103,8 @@ function DataTable({ tableName }: Props) {
     setAppliedFilters({});
   };
 
-  const hasActiveDraft = Object.values(draftFilters).some(v => v.trim());
-  const hasActiveFilter = Object.values(appliedFilters).some(v => v.trim());
+  const activeFilterCount = Object.values(appliedFilters).filter(v => v.trim()).length;
+  const hasDraft = Object.values(draftFilters).some(v => v.trim());
 
   const filteredRows = data
     ? data.rows.filter((row) =>
@@ -93,8 +112,7 @@ function DataTable({ tableName }: Props) {
           if (!keyword.trim()) return true;
           const colIdx = data.columns.findIndex((c) => c.name === field);
           if (colIdx < 0) return true;
-          const val = row[colIdx];
-          return String(val ?? "").toLowerCase().includes(keyword.toLowerCase());
+          return fuzzyMatch(String(row[colIdx] ?? ""), keyword);
         })
       )
     : [];
@@ -175,42 +193,53 @@ function DataTable({ tableName }: Props) {
       {/* Header */}
       <div className="table-header">
         <h3>{pageTitle}</h3>
-        <div className="table-stats">
-          <span className="table-stats-badge">共 {data.total} 条</span>
-          {hasActiveFilter && (
-            <span className="table-stats-badge filtered">筛选后 {filteredRows.length} 条</span>
-          )}
+        <div className="table-header-right">
+          <div className="table-stats">
+            <span className="table-stats-badge"><IconRows size={11} /> 共 {data.total} 条</span>
+            {activeFilterCount > 0 && (
+              <span className="table-stats-badge filtered">筛选后 {filteredRows.length} 条</span>
+            )}
+          </div>
+          <button
+            className={`filter-toggle-btn ${filterOpen ? "open" : ""} ${activeFilterCount > 0 ? "active" : ""}`}
+            onClick={() => setFilterOpen(v => !v)}
+          >
+            <IconFilter size={13} />
+            筛选
+            {activeFilterCount > 0 && <span className="filter-count">{activeFilterCount}</span>}
+            <span className={`filter-chevron ${filterOpen ? "up" : ""}`}>›</span>
+          </button>
         </div>
       </div>
 
-      {/* Filter bar */}
-      <div className="filter-bar">
-        <div className="filter-fields">
-          {displayColumns.map((col) => (
-            <div className="filter-item" key={col.field}>
-              <label className="filter-item-label">{col.label}</label>
-              <input
-                className="filter-item-input"
-                placeholder="输入筛选..."
-                value={draftFilters[col.field] ?? ""}
-                onChange={(e) =>
-                  setDraftFilters((f) => ({ ...f, [col.field]: e.target.value }))
-                }
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              />
-            </div>
-          ))}
-        </div>
-        <div className="filter-actions">
-          <button className="filter-btn-search" onClick={handleSearch}>
-            <span className="filter-btn-icon">⌕</span>
-            搜索
-          </button>
-          {(hasActiveDraft || hasActiveFilter) && (
-            <button className="filter-btn-reset" onClick={handleReset}>
-              重置
+      {/* Collapsible filter panel */}
+      <div className={`filter-panel ${filterOpen ? "open" : ""}`}>
+        <div className="filter-panel-inner">
+          <div className="filter-fields">
+            {displayColumns.map((col) => (
+              <div className="filter-item" key={col.field}>
+                <label className="filter-item-label">{col.label}</label>
+                <input
+                  className="filter-item-input"
+                  placeholder="模糊搜索..."
+                  value={draftFilters[col.field] ?? ""}
+                  onChange={(e) =>
+                    setDraftFilters((f) => ({ ...f, [col.field]: e.target.value }))
+                  }
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="filter-actions">
+            <button className="filter-btn-search" onClick={handleSearch}>
+              <IconSearch size={13} />
+              搜索
             </button>
-          )}
+            {(hasDraft || activeFilterCount > 0) && (
+              <button className="filter-btn-reset" onClick={handleReset}>重置</button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -218,12 +247,21 @@ function DataTable({ tableName }: Props) {
 
       {/* Table */}
       <div className="table-container">
+        {filteredRows.length === 0 && !loading ? (
+          <div className="table-empty">
+            <IconInbox size={36} />
+            <span>{activeFilterCount > 0 ? "没有匹配的数据" : "暂无数据"}</span>
+          </div>
+        ) : (
         <table>
           <thead>
             <tr>
               {displayColumns.map((col) => (
                 <th key={col.field} title={col.field}>
-                  {col.label}
+                  <span>{col.label}</span>
+                  {appliedFilters[col.field]?.trim() && (
+                    <span className="th-filter-dot" />
+                  )}
                 </th>
               ))}
             </tr>
@@ -244,17 +282,18 @@ function DataTable({ tableName }: Props) {
             ))}
           </tbody>
         </table>
+        )}
       </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="pagination">
           <button disabled={page <= 1} onClick={() => handlePageChange(page - 1)}>
-            ← 上一页
+            <IconChevronLeft size={13} /> 上一页
           </button>
           <span className="pagination-info">{page} / {totalPages}</span>
           <button disabled={page >= totalPages} onClick={() => handlePageChange(page + 1)}>
-            下一页 →
+            下一页 <IconChevronRight size={13} />
           </button>
         </div>
       )}
@@ -265,7 +304,7 @@ function DataTable({ tableName }: Props) {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>{pageTitle} - 详情</h3>
-              <button className="modal-close" onClick={closeDetail}>×</button>
+              <button className="modal-close" onClick={closeDetail}><IconX size={14} /></button>
             </div>
             <div className="modal-body">
               {detailColumns.map((col) => (
@@ -283,9 +322,15 @@ function DataTable({ tableName }: Props) {
               ))}
             </div>
             <div className="modal-footer">
-              <button className="btn-cancel" onClick={closeDetail}>取消</button>
+              <button className="btn-cancel" onClick={closeDetail}>
+                <IconX size={13} /> 取消
+              </button>
               <button className="btn-save" onClick={handleSave} disabled={saving}>
-                {saving ? "保存中..." : "保存"}
+                {saving ? (
+                  <><span className="btn-spinner-sm" /> 保存中...</>
+                ) : (
+                  <><IconSave size={13} /> 保存</>
+                )}
               </button>
             </div>
           </div>

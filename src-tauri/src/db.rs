@@ -264,12 +264,42 @@ pub async fn execute_update(
         }
     }
 
-    let sql = format!(
-        "UPDATE [{}] SET [{}] = @P1 WHERE [{}] = @P2",
-        table_name.replace('.', "].["),
-        column,
-        pk_column
+    // Check if the table has an exchangeTime column
+    let (schema, tbl) = if let Some(dot) = table_name.find('.') {
+        (&table_name[..dot], &table_name[dot + 1..])
+    } else {
+        ("dbo", table_name)
+    };
+    let check_sql = format!(
+        "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '{}' AND TABLE_NAME = '{}' AND COLUMN_NAME = 'exchangeTime'",
+        schema, tbl
     );
+    let check_stream = client
+        .simple_query(&check_sql)
+        .await
+        .map_err(|e| format!("检查列失败: {}", e))?;
+    let check_rows = check_stream
+        .into_first_result()
+        .await
+        .map_err(|e| format!("读取检查结果失败: {}", e))?;
+    let has_exchange_time: bool = check_rows
+        .first()
+        .and_then(|r| r.get::<i32, _>(0))
+        .unwrap_or(0)
+        > 0;
+
+    let escaped_table = table_name.replace('.', "].[");
+    let sql = if has_exchange_time && column != "exchangeTime" {
+        format!(
+            "UPDATE [{}] SET [{}] = @P1, [exchangeTime] = GETDATE() WHERE [{}] = @P2",
+            escaped_table, column, pk_column
+        )
+    } else {
+        format!(
+            "UPDATE [{}] SET [{}] = @P1 WHERE [{}] = @P2",
+            escaped_table, column, pk_column
+        )
+    };
 
     let result = client
         .execute(&sql, &[&value, &pk_value])

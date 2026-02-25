@@ -16,7 +16,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border);
 }
@@ -26,6 +26,12 @@
   font-weight: 600;
   color: var(--text-primary);
   letter-spacing: -0.3px;
+}
+
+.table-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .table-stats {
@@ -43,6 +49,9 @@
   border-radius: 20px;
   font-size: 11px;
   color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .table-stats-badge.filtered {
@@ -84,12 +93,88 @@ thead th {
   letter-spacing: 0.5px;
 }
 
-/* Filter bar */
-.filter-bar {
+/* Filter toggle button */
+.filter-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.filter-toggle-btn:hover {
+  border-color: var(--primary);
+  color: #a5b4fc;
+  background: var(--primary-light);
+}
+
+.filter-toggle-btn.open {
+  border-color: var(--primary);
+  color: #a5b4fc;
+  background: var(--primary-light);
+}
+
+.filter-toggle-btn.active {
+  border-color: var(--primary);
+  color: #a5b4fc;
+}
+
+.filter-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.filter-chevron {
+  font-size: 16px;
+  line-height: 1;
+  transition: transform var(--transition);
+  display: inline-block;
+  transform: rotate(90deg);
+}
+
+.filter-chevron.up {
+  transform: rotate(-90deg);
+}
+
+/* Collapsible filter panel */
+.filter-panel {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.25s ease,
+              margin-bottom 0.3s ease;
+  opacity: 0;
+  margin-bottom: 0;
+}
+
+.filter-panel.open {
+  max-height: 400px;
+  opacity: 1;
+  margin-bottom: 12px;
+}
+
+.filter-panel-inner {
   display: flex;
   align-items: flex-end;
   gap: 12px;
-  margin-bottom: 14px;
   padding: 14px 16px;
   background: var(--bg-surface);
   border: 1px solid var(--border);
@@ -100,20 +185,20 @@ thead th {
   flex: 1;
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 14px;
+  gap: 8px 12px;
 }
 
 .filter-item {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: 110px;
-  flex: 1 1 110px;
-  max-width: 180px;
+  min-width: 100px;
+  flex: 1 1 100px;
+  max-width: 160px;
 }
 
 .filter-item-label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
   color: var(--text-muted);
   text-transform: uppercase;
@@ -122,7 +207,7 @@ thead th {
 }
 
 .filter-item-input {
-  padding: 6px 10px;
+  padding: 5px 9px;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -153,12 +238,12 @@ thead th {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 16px;
+  padding: 7px 14px;
   background: linear-gradient(135deg, var(--primary), var(--primary-hover));
   color: #fff;
   border: none;
   border-radius: var(--radius-sm);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition);
@@ -175,17 +260,12 @@ thead th {
   transform: translateY(0);
 }
 
-.filter-btn-icon {
-  font-size: 15px;
-  line-height: 1;
-}
-
 .filter-btn-reset {
-  padding: 6px 16px;
+  padding: 5px 14px;
   background: transparent;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--text-muted);
   cursor: pointer;
@@ -199,6 +279,18 @@ thead th {
   border-color: var(--danger);
   color: var(--danger);
   background: rgba(239, 68, 68, 0.06);
+}
+
+/* Active filter dot on th */
+.th-filter-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  background: var(--primary);
+  border-radius: 50%;
+  margin-left: 5px;
+  vertical-align: middle;
+  box-shadow: 0 0 4px var(--primary);
 }
 
 tbody td {
@@ -492,7 +584,36 @@ tbody tr:last-child td {
   cursor: not-allowed;
 }
 
-/* Toast */
+.table-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.btn-spinner-sm {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+}
+
+.btn-cancel,
+.btn-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+
 .toast {
   position: fixed;
   top: 20px;

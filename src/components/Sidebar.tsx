@@ -1,4 +1,5 @@
 import { getTableLabel } from "../tableConfig";
+import { IconDatabase, IconTable, IconUnlink } from "./Icons";
 import "./Sidebar.css";
 
 interface Props {
@@ -15,10 +16,12 @@ function Sidebar({ tables, selectedTable, onSelectTable, onDisconnect }: Props) 
     <aside className="sidebar">
       <div className="sidebar-header">
         <div className="sidebar-title">
-          <span className="sidebar-title-dot" />
+          <IconDatabase size={14} />
           数据表
+          <span className="sidebar-title-dot" />
         </div>
         <button className="disconnect-btn" onClick={onDisconnect}>
+          <IconUnlink size={12} />
           断开
         </button>
       </div>
@@ -29,6 +32,7 @@ function Sidebar({ tables, selectedTable, onSelectTable, onDisconnect }: Props) 
             className={`table-item ${selectedTable === table ? "active" : ""}`}
             onClick={() => onSelectTable(table)}
           >
+            <IconTable size={13} className="table-item-icon" />
             {getTableLabel(table)}
           </div>
         ))}
