@@ -4,7 +4,7 @@ import type { QueryResult } from "../types";
 import { getTableConfig, type ColumnConfig } from "../tableConfig";
 import {
   IconFilter, IconSearch, IconChevronLeft, IconChevronRight,
-  IconRows, IconSave, IconX, IconRefresh, IconInbox
+  IconRows, IconSave, IconX, IconInbox
 } from "./Icons";
 import "./DataTable.css";
 
